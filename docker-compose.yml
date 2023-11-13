@@ -1,0 +1,96 @@
+version: '3.7'
+
+services: 
+#Redis-----------------------------------------------------------------------------------------
+    django-dockerizing-redis:
+        image: redis:latest
+        container_name: django-dockerizing_redis
+        hostname: django-dockerizing_redis
+        env_file:
+            - .env
+        ports:
+            - "6379:6379"
+        volumes:
+            - django_dockerizing_redis_data:/data
+        networks:
+            - django_dockerizing
+        # command: ["sh", "-c", "rm -f /data/dump.rdb && redis-server --save '' --appendonly no --requirepass $PASSWORD_REDIS"]
+        command: ["sh", "-c", "rm -f /data/dump.rdb && redis-server --save '' --appendonly no "]
+        restart: on-failure
+
+
+# #Nginx-----------------------------------------------------------------------------------------
+#     its-nginx:
+#         image: harbor.sahimco.ir/public/nginx:latest
+#         container_name: its_nginx
+#         hostname: its_nginx
+#         ports:
+#             - 80:80
+#             - 443:443
+#         volumes:
+#             - ./docker/compose/nginx_config/nginx.conf:/etc/nginx/nginx.conf
+#             - ./docker/compose/nginx_config/conf.d/:/etc/nginx/conf.d
+#             - its_media_data:/django_media:ro
+#             - its_statics_data:/django_statics:ro
+#         networks:
+#             - its
+#         depends_on:
+#             - its-api
+#             - its-socket
+#         restart: on-failure
+    
+
+#Postgres-----------------------------------------------------------------------------------------
+    django-dockerizing-postgres:
+        image: postgis/postgis:latest
+        container_name: django_dockerizing_postgresql
+        hostname: django_dockerizing_postgresql
+        environment: 
+            - POSTGRES_DB=django_dockerizing_db
+            - POSTGRES_USER=django_dockerizing_user
+            - POSTGRES_PASSWORD=hdfjhsfhsdfg
+        ports:
+            - "5432:5432"
+        volumes:
+            - django_dockerizing_postgresql_data:/var/lib/postgresql/data
+        networks:
+            - django_dockerizing
+        restart: on-failure
+
+#API-----------------------------------------------------------------------------------------
+    django-dockerizing:
+        image: django-dockerizing:latest
+        container_name: django_dockerizing
+        hostname: django_dockerizing
+        depends_on: 
+            - django-dockerizing-postgres
+            - django-dockerizing-redis
+        ports:
+            - "8088:8088"
+        # command: ["ping", "8.8.8.8"]
+        env_file: 
+            - .env
+        volumes:
+            - django_dockerizing_media_data:/app/media
+            - django_dockerizing_static_data:/app/static
+        networks:
+            - django_dockerizing
+        restart: on-failure
+
+
+
+volumes: 
+    django_dockerizing_media_data:
+        external: true
+    django_dockerizing_static_data:
+        external: true
+    django_dockerizing_postgresql_data:
+        external: true
+    django_dockerizing_redis_data:
+        external: true
+          
+
+networks:
+    django_dockerizing:
+        external: true
+        name: django_dockerizing_net
